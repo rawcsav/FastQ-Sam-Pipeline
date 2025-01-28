@@ -233,23 +233,25 @@ process_barcode() {
 process_project() {
     local project_dir=$1
     local threads=$2
-    local reference=$3
+    local relative_reference_path=$3
 
     echo "Processing project directory: $(basename "$project_dir")"
 
-    
-    if [ -z "$reference" ]; then
-        reference="$project_dir/errorCorrection/reference.fasta"
+    # Determine the reference path
+    local reference
+    if [ -z "$relative_reference_path" ]; then
+        reference="$project_dir/errorCorrection/reference-new.fasta"
         echo "Using default reference path: $reference"
+    else
+        reference="$project_dir/errorCorrection/$relative_reference_path"
+        echo "Using specified reference path: $reference"
     fi
 
-    
     if [ ! -f "$reference" ]; then
         echo "Error: Reference genome file '$reference' does not exist for project $(basename "$project_dir")"
         return 1
     fi
 
-    
     for barcode_dir in "$project_dir/data"/barcode*/; do
         if [ -d "$barcode_dir" ]; then
             process_barcode "$barcode_dir" "$project_dir" "$reference" "$threads"
@@ -269,6 +271,7 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
+# Main script logic
 while [[ $# -gt 0 ]]; do
     case $1 in
         -b|--base-dir)
@@ -303,7 +306,7 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         -r|--reference)
-            REFERENCE="$2"
+            RELATIVE_REFERENCE_PATH="$2"
             shift 2
             ;;
         -h|--help)
@@ -324,16 +327,11 @@ if [[ -z "$PROJECT_DIR" && "$PROCESS_ALL" == false ]]; then
     exit 1
 fi
 
-if [ ! -d "$IGV_DIR" ]; then
-    echo "Error: IGVTesting directory '$IGV_DIR' does not exist"
-    exit 1
-fi
-
 if [ "$PROCESS_ALL" = true ]; then
     echo "Processing all project directories in $IGV_DIR"
     for dir in "$IGV_DIR"/*/; do
         if [ -d "$dir" ]; then
-            process_project "$dir" "$THREADS" "$REFERENCE"
+            process_project "$dir" "$THREADS" "$RELATIVE_REFERENCE_PATH"
         fi
     done
 else
@@ -350,7 +348,7 @@ else
         echo "Error: Project directory '$PROJECT_DIR' does not exist"
         exit 1
     fi
-    process_project "$full_project_path" "$THREADS" "$REFERENCE"
+    process_project "$full_project_path" "$THREADS" "$RELATIVE_REFERENCE_PATH"
 fi
 
 echo "Pipeline completed successfully!"
