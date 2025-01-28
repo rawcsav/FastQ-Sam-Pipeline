@@ -46,7 +46,7 @@ Run the script with the desired options:
 - Process all directories with 16 threads:
   ```bash
   ./fastq_sam.sh -a -t 16
-  ``
+  ```
 
 ## Acknowledgments
 
